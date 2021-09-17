@@ -11,42 +11,44 @@
 
 #include "extern/core/src/bridge.h"
 
+#include "window.h"
+
 void bridge::NeedRestart()
 {
-//    Window::window_->post_restart_message();
+    Window::window_->post_restart_message();
 }
 
 void bridge::LoadWebView(const std::int32_t sender, const std::int32_t view_info,
-    const char* html, const char* waves)
+    const char* html)
 {
-//    Window::window_->web_view_.push_load(sender, view_info, html, waves);
+    Window::window_->web_view_.push_load(sender, view_info, html);
 }
 
 void bridge::LoadImageView(const std::int32_t sender, const std::int32_t view_info,
-    const std::int32_t image_width, const char* waves)
+    const std::int32_t image_width)
 {
-//    Window::window_->image_view_.push_load(sender, view_info, image_width, waves);
+    Window::window_->image_view_.push_load(sender, view_info, image_width);
 }
 
 std::uint32_t* bridge::GetPixels()
 {
-//    return Window::window_->image_view_.get_pixels();
+    return Window::window_->image_view_.get_pixels();
     return nullptr;
 }
 
 void bridge::ReleasePixels(std::uint32_t* const pixels)
 {
-//    Window::window_->image_view_.release_pixels(pixels);
+    Window::window_->image_view_.release_pixels(pixels);
 }
 
 void bridge::RefreshImageView()
 {
-//    Window::window_->image_view_.refresh_image_view();
+    Window::window_->image_view_.refresh_image_view();
 }
 
 void bridge::CallFunction(const char* function)
 {
-//    Window::window_->web_view_.evaluate(function);
+    Window::window_->web_view_.evaluate(function);
 }
 
 std::string bridge::GetAsset(const char* key)
@@ -57,26 +59,25 @@ std::string bridge::GetAsset(const char* key)
 
 std::string bridge::GetPreference(const char* key)
 {
-    // std::filesystem::path value_path = Window::window_->config_path_ / key;
-    // std::ifstream value_stream (value_path.string());
-    // std::string value((std::istreambuf_iterator<char>(value_stream)), std::istreambuf_iterator<char>());
-    // return value;
-    return "";
+    std::filesystem::path value_path = Window::window_->config_path_ / key;
+    std::ifstream value_stream (value_path.string());
+    std::string value((std::istreambuf_iterator<char>(value_stream)), std::istreambuf_iterator<char>());
+    return value;
 }
 
 void bridge::SetPreference(const char* key, const char* value)
 {
-    // std::filesystem::path value_path = Window::window_->config_path_ / key;
-    // std::ofstream value_stream (value_path.string());
-    // if (value_stream)
-    // {
-    //     value_stream << value;
-    // }
+    std::filesystem::path value_path = Window::window_->config_path_ / key;
+    std::ofstream value_stream (value_path.string());
+    if (value_stream)
+    {
+         value_stream << value;
+    }
 }
 
-void bridge::PostThreadMessage(std::int32_t receiver, const char* id, const char* command, const char* info)
+void bridge::AsyncMessage(std::int32_t receiver, const char* id, const char* command, const char* info)
 {
-//    Window::window_->post_thread_message(receiver, id, command, info);
+    Window::window_->async_message(receiver, id, command, info);
 }
 
 void bridge::AddParam(const char *key, const char *value)
@@ -99,12 +100,7 @@ void bridge::PostHttp(const std::int32_t sender, const char* id, const char* com
     // env_->DeleteLocalRef(jUrl);
 }
 
-void bridge::PlayAudio(const std::int32_t index)
-{
-//    Window::window_->play_audio(index);
-}
-
 void bridge::Exit()
 {
-//    Window::window_->close();
+    Window::window_->close();
 }
