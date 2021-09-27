@@ -13,7 +13,7 @@ set(CPACK_PACKAGE_ICON "${CMAKE_CURRENT_BINARY_DIR}/icon/app.ico")
 set(CPACK_GENERATOR "WIX")
 set(CPACK_WIX_UPGRADE_GUID "${cross_guid}")
 set(CPACK_WIX_PRODUCT_ICON "${CPACK_PACKAGE_ICON}")
-set(CPACK_PACKAGE_INSTALL_DIRECTORY "${CPACK_PACKAGE_VENDOR}\\\\${CMAKE_PROJECT_NAME}")
+set(CPACK_PACKAGE_INSTALL_DIRECTORY "${cross_identifier}")
 
 include(CPack)
 
@@ -21,7 +21,7 @@ add_subdirectory("icon")
 
 add_compile_definitions(PROJECT_NAME="${CMAKE_PROJECT_NAME}")
 add_compile_definitions(PROJECT_VERSION="${CMAKE_PROJECT_VERSION}")
-add_compile_definitions(APPLICATION_ID="${CPACK_PACKAGE_VENDOR}")
+add_compile_definitions(APPLICATION_ID="${cross_identifier}")
 
 exec_program(nuget.exe
     ARGS install "Microsoft.Web.WebView2" -Version 1.0.961.33 -ExcludeVersion -OutputDirectory ${CMAKE_BINARY_DIR}/packages)

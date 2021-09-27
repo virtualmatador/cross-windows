@@ -11,6 +11,7 @@
 #include <sstream>
 
 #include <wrl/event.h>
+#include <shlwapi.h>
 
 #include "extern/core/src/cross.h"
 
@@ -34,7 +35,7 @@ void WebWidget::push_load(const std::int32_t sender, const std::int32_t view_inf
     dispatch_lock_.lock();
     dispatch_queue_.push({sender, view_info, html});
     dispatch_lock_.unlock();
-    PostMessageA(Window::window_->hwnd_, Window::WM_LOAD_WEB_, 0, 0);
+    PostMessageA(Window::window_->hwnd_, Window::WM_LOAD_, 0, 0);
 }
 
 void WebWidget::evaluate(const char* function)
@@ -75,16 +76,8 @@ void WebWidget::resize()
 void WebWidget::on_load(const std::int32_t sender, const std::int32_t view_info, const char* html)
 {
     destroy();
-    Window::window_->prepare_web();
     Window::window_->load_view(sender, view_info);
     html_ = html;
-
-    // @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request)
-    // {
-    //     Intent intent = new Intent(Intent.ACTION_VIEW, request.getUrl());
-    //     view.getContext().startActivity(intent);
-    //     return true;
-    // }
     auto options = Microsoft::WRL::Make<CoreWebView2EnvironmentOptions>();
     auto hr = CreateCoreWebView2EnvironmentWithOptions(nullptr, Window::window_->config_path_.wstring().c_str(), options.Get(),
         Microsoft::WRL::Callback<ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler>(this, &WebWidget::OnCreateEnvironmentCompleted).Get());
@@ -121,6 +114,9 @@ HRESULT WebWidget::OnCreateCoreWebView2ControllerCompleted(HRESULT errorCode, IC
             throw std::runtime_error("");
         }
         resize();
+        m_webView->SetVirtualHostNameToFolderMapping(L"asset.cross.com", (Window::window_->assets_path_ / L"assets").wstring().c_str(), COREWEBVIEW2_HOST_RESOURCE_ACCESS_KIND_ALLOW);
+        m_webView->AddWebResourceRequestedFilter(L"cross://*", COREWEBVIEW2_WEB_RESOURCE_CONTEXT_ALL);
+        m_webView->add_WebResourceRequested(Microsoft::WRL::Callback<ICoreWebView2WebResourceRequestedEventHandler>(this, &WebWidget::OnResourceRequested).Get(), nullptr);
         m_webView->add_WebMessageReceived(Microsoft::WRL::Callback<ICoreWebView2WebMessageReceivedEventHandler>(this, &WebWidget::OnMessageReceived).Get(), nullptr);
         m_webView->add_NavigationCompleted(Microsoft::WRL::Callback<ICoreWebView2NavigationCompletedEventHandler>(this, &WebWidget::OnNavigationCompleted).Get(), nullptr);
         std::wstring path = L"file://" + (Window::window_->assets_path_ / "assets" / (std::string(html_) + ".htm")).wstring();
@@ -142,7 +138,12 @@ HRESULT WebWidget::OnNavigationCompleted(ICoreWebView2* core_sender, ICoreWebVie
             L"function CallHandler(id, command, info)"
             L"{"
             L"    Handler.postMessage(Handler_Receiver.toString() + \" \" + id + \" \" + command + \" \" + info);"
-            L"}";
+            L"}"
+            "var cross_asset_domain_ = 'https://asset.cross.com/';"
+            "var cross_asset_async_ = true;"
+            "var cross_pointer_type_ = 'mouse';"
+            "var cross_pointer_upsidedown_ = false;"
+            ;
         core_sender->ExecuteScript(os.str().c_str(), Microsoft::WRL::Callback<ICoreWebView2ExecuteScriptCompletedHandler>([this](HRESULT errorCode, LPCWSTR resultObjectAsJson) -> HRESULT
         {
             if (errorCode == S_OK)
@@ -174,4 +175,56 @@ HRESULT WebWidget::OnMessageReceived(ICoreWebView2* core_sender, ICoreWebView2We
     std::getline(is, info);
     cross::HandleAsync(sender, id.c_str(), command.c_str(), info.c_str());
     return S_OK;
+}
+
+HRESULT WebWidget::OnResourceRequested(ICoreWebView2* sender, ICoreWebView2WebResourceRequestedEventArgs* args)
+{
+    Microsoft::WRL::ComPtr<ICoreWebView2WebResourceRequest> request;
+    LPWSTR uri;
+    Microsoft::WRL::ComPtr<ICoreWebView2WebResourceResponse> response;
+    Microsoft::WRL::ComPtr<IStream> stream;
+    int status = 0;
+    if (args->get_Request(&request) == S_OK && request->get_Uri(&uri) == S_OK)
+    {
+        std::string uria;
+        std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+        uria = converter.to_bytes(uri);
+        if (uria.rfind("cross://") == 0)
+        {
+            void* data = nullptr;
+            std::size_t size = 0;
+            cross::FeedUri(uria.c_str(), [&](const std::vector<unsigned char>& input)
+            {
+                size = input.size();
+                data = GlobalAlloc(GMEM_FIXED, size);
+                if (data)
+                {
+                    std::memcpy(data, input.data(), size);
+                }
+                else
+                {
+                    size = 0;
+                }
+            });
+            if (data)
+            {
+                HGLOBAL hg = GlobalHandle(data);
+                if (CreateStreamOnHGlobal(hg, TRUE, &stream) == S_OK)
+                {
+                    status = 200;
+                }
+                else
+                {
+                    status = 500;
+                    GlobalFree(data);
+                }
+            }
+            else
+            {
+                status = 500;
+            }
+        }
+    }
+    m_webViewEnvironment->CreateWebResourceResponse(stream.Get(), status, L"OK", nullptr, &response);
+    return args->put_Response(response.Get());
 }

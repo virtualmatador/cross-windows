@@ -8,6 +8,7 @@
 
 #include <cstdint>
 #include <fstream>
+#include <sstream>
 
 #include "extern/core/src/bridge.h"
 
@@ -18,43 +19,15 @@ void bridge::NeedRestart()
     Window::window_->post_restart_message();
 }
 
-void bridge::LoadWebView(const std::int32_t sender, const std::int32_t view_info,
+void bridge::LoadView(const std::int32_t sender, const std::int32_t view_info,
     const char* html)
 {
     Window::window_->web_view_.push_load(sender, view_info, html);
 }
 
-void bridge::LoadImageView(const std::int32_t sender, const std::int32_t view_info,
-    const std::int32_t image_width)
-{
-    Window::window_->image_view_.push_load(sender, view_info, image_width);
-}
-
-std::uint32_t* bridge::GetPixels()
-{
-    return Window::window_->image_view_.get_pixels();
-    return nullptr;
-}
-
-void bridge::ReleasePixels(std::uint32_t* const pixels)
-{
-    Window::window_->image_view_.release_pixels(pixels);
-}
-
-void bridge::RefreshImageView()
-{
-    Window::window_->image_view_.refresh_image_view();
-}
-
 void bridge::CallFunction(const char* function)
 {
     Window::window_->web_view_.evaluate(function);
-}
-
-std::string bridge::GetAsset(const char* key)
-{
-    std::ifstream asset(key);
-    return {std::istreambuf_iterator<char>(asset), std::istreambuf_iterator<char>()};
 }
 
 std::string bridge::GetPreference(const char* key)
@@ -98,6 +71,23 @@ void bridge::PostHttp(const std::int32_t sender, const char* id, const char* com
     // env_->DeleteLocalRef(jId);
     // env_->DeleteLocalRef(jCommand);
     // env_->DeleteLocalRef(jUrl);
+}
+
+void bridge::CreateImage(const char* id, const char* parent)
+{
+    std::ostringstream js;
+    js <<
+        "var img = document.createElement('img');"
+        "img.setAttribute('id', '" << id << "');"
+        "document.getElementById('" << parent << "').appendChild(img);";
+    bridge::CallFunction(js.str().c_str());
+}
+
+void bridge::ResetImage(const std::int32_t sender, const std::int32_t index, const char* id)
+{
+    std::ostringstream js;
+    js << "resetImage(" << sender << "," << index << ",'" << id << "');";
+    bridge::CallFunction(js.str().c_str());
 }
 
 void bridge::Exit()

@@ -41,12 +41,14 @@ private:
         ICoreWebView2Controller* webView);
     HRESULT OnNavigationCompleted(ICoreWebView2* sender, ICoreWebView2NavigationCompletedEventArgs* args);
     HRESULT OnMessageReceived(ICoreWebView2* sender, ICoreWebView2WebMessageReceivedEventArgs* args);
+    HRESULT OnResourceRequested(ICoreWebView2* sender, ICoreWebView2WebResourceRequestedEventArgs* args);
+
 private:
     std::mutex dispatch_lock_;
     std::queue<LoadWebViewDispatch> dispatch_queue_;
     Microsoft::WRL::ComPtr<ICoreWebView2Environment> m_webViewEnvironment;
     Microsoft::WRL::ComPtr<ICoreWebView2Controller> m_controller;
-    Microsoft::WRL::ComPtr<ICoreWebView2> m_webView;
+    Microsoft::WRL::ComPtr<ICoreWebView2_3> m_webView;
     const char* html_;
 };
 

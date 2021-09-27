@@ -17,10 +17,9 @@
 #include <string>
 #include <vector>
 
-#include <Windows.h>
+#include "framework.h"
 
 #include "web.h"
-#include "image.h"
 
 struct PostMessageDispatch
 {
@@ -40,8 +39,6 @@ public:
     ~Window();
     void post_restart_message();
     void async_message(std::int32_t receiver, const char* id, const char* command, const char* info);
-    void prepare_web();
-    void prepare_image();
     void load_view(const std::int32_t sender, const std::int32_t view_info);
     void close();
     void handle_key(WPARAM wParam);
@@ -60,7 +57,6 @@ public:
     int width_;
     int height_;
     WebWidget web_view_;
-    ImageWidget image_view_;
 
 private:
     std::mutex post_message_lock_;
@@ -70,8 +66,7 @@ private:
 public:
     static const UINT WM_RESTART_ = WM_USER + __LINE__;
     static const UINT WM_MESSAGE_ = WM_USER + __LINE__;
-    static const UINT WM_LOAD_WEB_ = WM_USER + __LINE__;
-    static const UINT WM_LOAD_IMAGE_ = WM_USER + __LINE__;
+    static const UINT WM_LOAD_ = WM_USER + __LINE__;
 };
 
 #endif // WINDOWS_WINDOW_H

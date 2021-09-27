@@ -70,7 +70,6 @@ LRESULT CALLBACK wnd_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         Window::window_->width_ = LOWORD(lParam);
         Window::window_->height_ = HIWORD(lParam);
         Window::window_->web_view_.resize();
-        Window::window_->image_view_.resize();
         break;
     case Window::WM_RESTART_:
         Window::window_->on_need_restart();
@@ -78,11 +77,8 @@ LRESULT CALLBACK wnd_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case Window::WM_MESSAGE_:
         Window::window_->on_post_message();
         break;
-    case Window::WM_LOAD_WEB_:
+    case Window::WM_LOAD_:
         Window::window_->web_view_.pop_load();
-        break;
-    case Window::WM_LOAD_IMAGE_:
-        Window::window_->image_view_.pop_load();
         break;
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
@@ -142,16 +138,6 @@ void Window::async_message(std::int32_t receiver, const char* id, const char* co
     post_message_queue_.push({ receiver, id, command, info });
     post_message_lock_.unlock();
     PostMessageA(hwnd_, WM_MESSAGE_, 0, 0);
-}
-
-void Window::prepare_web()
-{
-    image_view_.destroy();
-}
-
-void Window::prepare_image()
-{
-    web_view_.destroy();
 }
 
 void Window::load_view(const std::int32_t sender, const std::int32_t view_info)
