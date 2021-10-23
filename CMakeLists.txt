@@ -42,6 +42,7 @@ target_link_libraries("platform" INTERFACE
 
 add_executable("${CMAKE_PROJECT_NAME}" WIN32)
 set_property(TARGET "${CMAKE_PROJECT_NAME}" PROPERTY CXX_STANDARD 17)
+set_property(TARGET "${CMAKE_PROJECT_NAME}" PROPERTY VS_DPI_AWARE "PerMonitor")
 add_dependencies("${CMAKE_PROJECT_NAME}" "app_icon")
 target_sources("${CMAKE_PROJECT_NAME}" PRIVATE "res.rc")
 file(GLOB main_sources "../../src/*.cpp")
